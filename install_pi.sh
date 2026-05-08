@@ -35,18 +35,21 @@ ok()  { printf '   \033[1;32m✓\033[0m %s\n' "$*"; }
 say "Installing system packages"
 sudo apt-get update -y
 
-# Pick whichever Chromium package this distro ships.
-#   - Bullseye / Bookworm:  chromium-browser
+# Pick whichever Chromium package this distro actually installs.
 #   - Trixie and newer:     chromium
+#   - Bullseye / Bookworm:  chromium-browser
+# We use `apt-cache policy` because on Trixie `apt-cache show chromium-browser`
+# still returns a stub record even though the package can't be installed.
 CHROMIUM_PKG=""
-for pkg in chromium-browser chromium; do
-    if apt-cache show "$pkg" >/dev/null 2>&1; then
+for pkg in chromium chromium-browser; do
+    cand="$(apt-cache policy "$pkg" 2>/dev/null | awk '/Candidate:/ {print $2}')"
+    if [ -n "$cand" ] && [ "$cand" != "(none)" ]; then
         CHROMIUM_PKG="$pkg"
         break
     fi
 done
 if [ -z "$CHROMIUM_PKG" ]; then
-    echo "ERROR: no chromium apt package found (tried chromium-browser, chromium)" >&2
+    echo "ERROR: no installable chromium package found (tried chromium, chromium-browser)" >&2
     exit 1
 fi
 echo "   using chromium package: $CHROMIUM_PKG"
