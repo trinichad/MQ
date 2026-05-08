@@ -2,7 +2,8 @@ flask>=3.0
 flask-socketio>=5.3
 
 # IR sensor on Raspberry Pi (skipped on macOS / Windows).
-# gpiozero needs a pin-factory backend; lgpio works on Pi 4 + Pi 5
-# with current kernels (RPi.GPIO is broken on newer kernels).
+# gpiozero needs a pin-factory backend. We rely on the apt-installed
+# python3-lgpio (made visible to the venv via --system-site-packages
+# in install_pi.sh), so we do NOT pip-install lgpio here (its sdist
+# requires swig to build).
 gpiozero>=2.0; platform_system == "Linux"
-lgpio; platform_system == "Linux"

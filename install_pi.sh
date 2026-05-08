@@ -76,8 +76,21 @@ cd "$INSTALL_DIR"
 
 # ---------------------------------------------------------------------------
 say "Creating Python virtual env"
+# Use --system-site-packages so the venv can see the apt-installed
+# python3-lgpio (gpiozero's preferred pin-factory backend on Pi 5 /
+# Trixie kernels). Recreate the venv if it exists without that flag.
+NEED_RECREATE=0
+if [ -d ".venv" ]; then
+    if ! grep -q '^include-system-site-packages = true' .venv/pyvenv.cfg 2>/dev/null; then
+        NEED_RECREATE=1
+    fi
+fi
+if [ "$NEED_RECREATE" = "1" ]; then
+    say "Recreating venv with --system-site-packages (so lgpio is visible)"
+    rm -rf .venv
+fi
 if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
+    python3 -m venv --system-site-packages .venv
 fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
