@@ -6,7 +6,17 @@
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="ui-body">
-  <div class="ui-wrap">
+
+  <!-- ============== ENCOUNTER MENU (shown first) ============== -->
+  <div id="menu-screen" class="menu-screen">
+    <h1 class="menu-title"><span>MagiQuest</span> Encounters</h1>
+    <p class="menu-sub">Choose an adventure</p>
+    <div class="menu-grid" id="menu-grid"><!-- filled by game.js --></div>
+    <div id="menu-status" class="status">menu — connecting…</div>
+  </div>
+
+  <!-- ============== GAME UI (hidden until an encounter is picked) ============== -->
+  <div id="game-screen" class="ui-wrap" style="display:none;">
     <div class="mana-row">
       <img id="left-mana"  class="mana"  src="/images/mana_l0.png" alt="left mana">
       <img id="mqbutton"   class="mq"    src="/images/mq.png"      alt="MQ" data-action="mq">
@@ -23,7 +33,10 @@
       </figure>
     </div>
 
-    <div id="status" class="status">UI — connecting…</div>
+    <div class="bottom-row">
+      <button id="menu-btn" class="menu-btn">‹ Menu</button>
+      <div id="status" class="status">UI — connecting…</div>
+    </div>
   </div>
 
   <!-- preload audio -->
@@ -32,6 +45,17 @@
   <audio id="snd-entrance" src="/static/snd/Das2-4.mp3" preload="auto"></audio>
 
   <script src="/static/js/socket.io.min.js"></script>
-  <script src="/static/js/game.js"></script>
+  <script src="/static/js/engine.js"></script>
+  <script src="/static/js/encounters/charlock.js"></script>
+  <script src="/static/js/encounters/dark_one.js"></script>
+  <script src="/static/js/encounters/goblin.js"></script>
+  <script src="/static/js/encounters/heroic_dragon.js"></script>
+  <script src="/static/js/encounters/pixie.js"></script>
+  <script src="/static/js/encounters/silver_dragon.js"></script>
+  <script src="/static/js/encounters/unicorn.js"></script>
+  <script src="/static/js/encounters/ursa.js"></script>
+  <script src="/static/js/encounters/winterra.js"></script>
+  <script src="/static/js/encounters/xavier.js"></script>
+  <script src="/static/js/menu.js"></script>
 </body>
 </html>

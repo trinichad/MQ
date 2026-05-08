@@ -24,6 +24,21 @@ VIDEOS_DIR = os.path.join(BASE_DIR, 'charlock_videos')
 IMAGES_DIR = os.path.join(BASE_DIR, 'images')
 SOUNDS_DIR = os.path.join(BASE_DIR, 'static', 'snd')
 
+# Per-encounter video folders. Keys are URL slugs used at /videos/<slug>/<file>.
+# Folders that don't exist yet are simply skipped at request time.
+ENCOUNTER_DIRS = {
+    'charlock':       os.path.join(BASE_DIR, 'charlock_videos'),
+    'dark_one':       os.path.join(BASE_DIR, 'dark_one_videos'),
+    'goblin':         os.path.join(BASE_DIR, 'goblin_videos'),
+    'heroic_dragon':  os.path.join(BASE_DIR, 'heroic_dragon_videos'),
+    'pixie':          os.path.join(BASE_DIR, 'pixie_videos'),
+    'silver_dragon':  os.path.join(BASE_DIR, 'silver_dragon_videos'),
+    'unicorn':        os.path.join(BASE_DIR, 'unicorn_videos'),
+    'ursa':           os.path.join(BASE_DIR, 'ursa_videos'),
+    'winterra':       os.path.join(BASE_DIR, 'winterra_videos'),
+    'xavier':         os.path.join(BASE_DIR, 'xavier_videos'),
+}
+
 # --- logging ---------------------------------------------------------------
 
 logging.basicConfig(
@@ -67,9 +82,19 @@ def video_page():
 
 @app.route('/videos/<path:filename>')
 def videos(filename):
+    """Backwards-compat: /videos/Foo.mp4 -> charlock_videos/Foo.mp4 ."""
     if not os.path.isdir(VIDEOS_DIR):
         abort(404)
     return send_from_directory(VIDEOS_DIR, filename, conditional=True)
+
+
+@app.route('/clips/<slug>/<path:filename>')
+def encounter_clip(slug, filename):
+    """Per-encounter video folder, e.g. /clips/dark_one/DarkOne0001.webm ."""
+    folder = ENCOUNTER_DIRS.get(slug)
+    if not folder or not os.path.isdir(folder):
+        abort(404)
+    return send_from_directory(folder, filename, conditional=True)
 
 
 @app.route('/images/<path:filename>')

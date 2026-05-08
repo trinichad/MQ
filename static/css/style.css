@@ -117,3 +117,133 @@ html, body.ui-body {
   align-self: stretch;
   text-align: center;
 }
+
+/* ===================== bottom row in game screen ===================== */
+
+.bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.menu-btn {
+  background: rgba(255,255,255,0.05);
+  color: #d6c98a;
+  border: 1px solid #5a4a1f;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.menu-btn:active { transform: scale(0.96); }
+
+/* ===================== encounter selection menu ===================== */
+
+.menu-screen {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at top, #1a1430 0%, #0b0b14 60%),
+    #0b0b14;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.menu-title {
+  margin: 4px 0 0;
+  font-size: clamp(28px, 5vw, 48px);
+  letter-spacing: 1px;
+  color: #ffe9b0;
+  text-shadow: 0 0 16px rgba(255, 200, 100, 0.35);
+  font-weight: 600;
+}
+.menu-title span {
+  color: #c79a3a;
+  font-style: italic;
+  margin-right: 6px;
+}
+
+.menu-sub {
+  margin: 4px 0 16px;
+  color: #8a8090;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 1100px;
+  padding-bottom: 12px;
+}
+
+.encounter-card {
+  background: rgba(255,255,255,0.04);
+  border: 2px solid #2a2438;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  color: #e8e3d0;
+  transition: transform 100ms ease, border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.encounter-card:hover,
+.encounter-card:focus-visible {
+  border-color: #c79a3a;
+  background: rgba(199, 154, 58, 0.08);
+}
+.encounter-card:active { transform: scale(0.97); }
+
+.encounter-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #000;
+}
+
+.encounter-card .name {
+  font-size: 14px;
+  line-height: 1.25;
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.encounter-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+.encounter-card.disabled:hover {
+  border-color: #2a2438;
+  background: rgba(255,255,255,0.04);
+}
+.encounter-card .badge {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #c79a3a;
+  border: 1px solid #5a4a1f;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.encounter-card.disabled .badge {
+  color: #6a6a78;
+  border-color: #2a2438;
+}
