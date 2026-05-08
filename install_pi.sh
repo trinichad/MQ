@@ -34,11 +34,28 @@ ok()  { printf '   \033[1;32m✓\033[0m %s\n' "$*"; }
 # ---------------------------------------------------------------------------
 say "Installing system packages"
 sudo apt-get update -y
+
+# Pick whichever Chromium package this distro ships.
+#   - Bullseye / Bookworm:  chromium-browser
+#   - Trixie and newer:     chromium
+CHROMIUM_PKG=""
+for pkg in chromium-browser chromium; do
+    if apt-cache show "$pkg" >/dev/null 2>&1; then
+        CHROMIUM_PKG="$pkg"
+        break
+    fi
+done
+if [ -z "$CHROMIUM_PKG" ]; then
+    echo "ERROR: no chromium apt package found (tried chromium-browser, chromium)" >&2
+    exit 1
+fi
+echo "   using chromium package: $CHROMIUM_PKG"
+
 sudo apt-get install -y \
     git curl \
     python3 python3-venv python3-pip \
     python3-lgpio \
-    chromium-browser \
+    "$CHROMIUM_PKG" \
     unclutter \
     x11-xserver-utils
 ok "apt packages installed"
