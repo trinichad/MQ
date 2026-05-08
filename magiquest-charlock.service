@@ -1,0 +1,20 @@
+[Unit]
+Description=MagiQuest Charlock dual-screen game
+After=graphical.target network-online.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+WorkingDirectory=/home/pi/Desktop/MQ_Python
+ExecStart=/home/pi/Desktop/MQ_Python/launch_game.sh
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/home/pi/Desktop/MQ_Python/game.log
+StandardError=append:/home/pi/Desktop/MQ_Python/game.log
+
+[Install]
+WantedBy=graphical.target

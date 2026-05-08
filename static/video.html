@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Charlock — Video</title>
+<link rel="stylesheet" href="/static/css/style.css">
+<style>
+  html, body { background:#000; margin:0; padding:0; height:100%; overflow:hidden; cursor:none; }
+  #vid { width:100vw; height:100vh; object-fit:contain; background:#000; }
+  #status { position:fixed; bottom:6px; right:10px; color:#333; font:11px monospace; }
+</style>
+</head>
+<body>
+  <video id="vid" autoplay muted playsinline></video>
+  <div id="status">video screen</div>
+
+  <script src="/static/js/socket.io.min.js"></script>
+  <script>
+    // The video page is a dumb client. It only:
+    //   - plays whatever video the UI tells it to play
+    //   - reports when the current clip ends
+    //
+    // Important: <video> autoplay is unmuted on a kiosk display, but most
+    // browsers require the page itself to load with `muted` attribute first
+    // and then we unmute on first interaction or after socket connect.
+
+    const vid    = document.getElementById('vid');
+    const status = document.getElementById('status');
+
+    // start with the idle clip so something is on screen even before UI loads
+    const IDLE = '/videos/Dragon0001.mp4';
+    vid.src = IDLE;
+    vid.muted = false;
+    vid.play().catch(() => {
+      // browser blocked autoplay with audio; retry muted
+      vid.muted = true;
+      vid.play().catch(()=>{});
+    });
+
+    const socket = io();
+
+    socket.on('connect', () => {
+      status.textContent = 'video screen — connected';
+    });
+    socket.on('disconnect', () => {
+      status.textContent = 'video screen — disconnected';
+    });
+
+    socket.on('change_video', (data) => {
+      const src = (data && data.src) || IDLE;
+      // Always restart, even if it's the same source.
+      vid.src = src;
+      vid.currentTime = 0;
+      vid.muted = false;
+      const p = vid.play();
+      if (p && p.catch) {
+        p.catch(() => {
+          vid.muted = true;
+          vid.play().catch(()=>{});
+        });
+      }
+    });
+
+    vid.addEventListener('ended', () => {
+      const src = vid.src;
+      socket.emit('video_ended', { src });
+    });
+
+    // Allow operator to unmute / fullscreen with a click or key.
+    document.addEventListener('click', () => {
+      vid.muted = false;
+      if (document.fullscreenElement == null && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(()=>{});
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f') document.documentElement.requestFullscreen().catch(()=>{});
+      if (e.key === 'm') vid.muted = !vid.muted;
+    });
+  </script>
+</body>
+</html>

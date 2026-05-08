@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Logs
+game.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Reference material — too large for git (915MB).
+# This is the original web game kept locally as reference only.
+Game Example/
+
+# Chromium kiosk profiles (created at runtime)
+/tmp/charlock-*/

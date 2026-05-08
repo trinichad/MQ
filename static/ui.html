@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Charlock — UI</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="ui-body">
+  <div class="ui-wrap">
+    <div class="mana-row">
+      <img id="left-mana"  class="mana"  src="/images/mana_l0.png" alt="left mana">
+      <img id="mqbutton"   class="mq"    src="/images/mq.png"      alt="MQ" data-action="mq">
+      <img id="right-mana" class="mana"  src="/images/mana_r0.png" alt="right mana">
+    </div>
+
+    <div class="spell-row">
+      <figure><img class="rune" src="/images/Protection_Rune.webp" data-spell="protect"   alt="Protect"></figure>
+      <figure><img class="rune" src="/images/Freeze_Rune.webp"     data-spell="freeze"    alt="Freeze"></figure>
+      <figure><img class="rune" src="/images/R071.gif"             data-spell="reveal"    alt="Reveal"></figure>
+      <figure><img class="rune" src="/images/Ice_Arrow_Rune.webp"  data-spell="iceArrow"  alt="Ice Arrow"></figure>
+      <figure class="cast-figure">
+        <button id="cast-btn" class="cast-btn">CAST</button>
+      </figure>
+    </div>
+
+    <div id="status" class="status">UI — connecting…</div>
+  </div>
+
+  <!-- preload audio -->
+  <audio id="snd-manadown" src="/static/snd/manadown.mp3" preload="auto"></audio>
+  <audio id="snd-manareset" src="/static/snd/mana_powerup.mp3" preload="auto"></audio>
+  <audio id="snd-entrance" src="/static/snd/Das2-4.mp3" preload="auto"></audio>
+
+  <script src="/static/js/socket.io.min.js"></script>
+  <script src="/static/js/game.js"></script>
+</body>
+</html>

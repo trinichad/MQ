@@ -1,0 +1,119 @@
+/* Charlock — UI styling for touchscreen */
+
+* { box-sizing: border-box; }
+
+html, body.ui-body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0b0b14;
+  color: #e8e3d0;
+  font-family: "Trebuchet MS", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+.ui-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  height: 100vh;
+  padding: 16px;
+  gap: 12px;
+}
+
+.mana-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.mana {
+  height: 38vh;
+  max-height: 380px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.mq {
+  height: 22vh;
+  max-height: 220px;
+  width: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 0 8px rgba(255, 220, 120, 0.4));
+  transition: transform 80ms ease, filter 120ms ease;
+}
+.mq:active {
+  transform: scale(0.94);
+  filter: drop-shadow(0 0 24px rgba(255, 220, 120, 0.9));
+}
+
+.spell-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+  flex: 0 0 auto;
+}
+
+.spell-row figure {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.rune {
+  height: 22vh;
+  max-height: 200px;
+  width: auto;
+  border-radius: 50%;
+  cursor: pointer;
+  background: rgba(255,255,255,0.04);
+  transition: transform 80ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+.rune:active {
+  transform: scale(0.94);
+}
+.rune.active {
+  box-shadow: 0 0 24px 6px rgba(120, 220, 255, 0.85);
+  background: rgba(120, 220, 255, 0.12);
+}
+
+.cast-figure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cast-btn {
+  height: 22vh;
+  max-height: 200px;
+  width: 22vh;
+  max-width: 200px;
+  border-radius: 50%;
+  border: 4px solid #c79a3a;
+  background: radial-gradient(circle at 30% 30%, #5a1f1f, #2a0a0a);
+  color: #ffe9b0;
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+.cast-btn:active {
+  transform: scale(0.94);
+  box-shadow: 0 0 30px 8px rgba(255, 200, 100, 0.8);
+}
+
+.status {
+  font: 12px/1.4 monospace;
+  color: #6a6a78;
+  align-self: stretch;
+  text-align: center;
+}
