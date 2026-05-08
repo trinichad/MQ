@@ -137,8 +137,8 @@
     state.activeEncounter = null;
     menuScreen.style.display = '';
     gameScreen.style.display = 'none';
-    // park video page on a neutral idle (use Charlock idle as a sane default)
-    changeSource('/clips/charlock/Dragon0001.mp4');
+    // park the video page on the MagiQuest logo screen
+    changeSource('__menu__');
   }
 
   function showGame(encounterId) {

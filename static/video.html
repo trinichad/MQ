@@ -8,10 +8,36 @@
   html, body { background:#000; margin:0; padding:0; height:100%; overflow:hidden; cursor:none; }
   #vid { width:100vw; height:100vh; object-fit:contain; background:#000; }
   #status { position:fixed; bottom:6px; right:10px; color:#333; font:11px monospace; }
+  #logo-screen {
+    position:fixed; inset:0; display:none;
+    align-items:center; justify-content:center; flex-direction:column;
+    background: radial-gradient(ellipse at center, #1a0d3a 0%, #05010f 70%, #000 100%);
+    color:#f4d77a; font-family: 'Cinzel', 'Trajan Pro', Georgia, serif;
+    text-align:center;
+  }
+  #logo-screen.show { display:flex; }
+  #logo-screen .magi { font-size: 14vw; font-style: italic; font-weight: 700;
+    background: linear-gradient(180deg, #ffe9a8 0%, #d4a23a 50%, #8a5a18 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 40px rgba(212,162,58,0.35);
+    letter-spacing: 0.04em;
+  }
+  #logo-screen .quest { font-size: 14vw; font-weight: 400;
+    color:#e7e2cc; letter-spacing: 0.18em; margin-top: -2vw;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+  }
+  #logo-screen .tag { margin-top: 2vw; font-size: 1.6vw; color:#a89b6a;
+    letter-spacing:0.5em; text-transform:uppercase;
+  }
 </style>
 </head>
 <body>
   <video id="vid" autoplay muted playsinline></video>
+  <div id="logo-screen" class="show">
+    <div class="magi">MagiQuest</div>
+    <div class="quest">ENCOUNTERS</div>
+    <div class="tag">choose your adventure</div>
+  </div>
   <div id="status">video screen</div>
 
   <script src="/static/js/socket.io.min.js"></script>
@@ -26,16 +52,19 @@
 
     const vid    = document.getElementById('vid');
     const status = document.getElementById('status');
+    const logo   = document.getElementById('logo-screen');
+    const MENU_SENTINEL = '__menu__';
 
-    // start with the idle clip so something is on screen even before UI loads
-    const IDLE = '/videos/Dragon0001.mp4';
-    vid.src = IDLE;
-    vid.muted = false;
-    vid.play().catch(() => {
-      // browser blocked autoplay with audio; retry muted
-      vid.muted = true;
-      vid.play().catch(()=>{});
-    });
+    function showLogo() {
+      logo.classList.add('show');
+      try { vid.pause(); } catch(_) {}
+      vid.removeAttribute('src');
+      vid.load();
+    }
+    function hideLogo() { logo.classList.remove('show'); }
+
+    // Start on the logo screen until UI tells us otherwise.
+    showLogo();
 
     const socket = io();
 
@@ -47,7 +76,9 @@
     });
 
     socket.on('change_video', (data) => {
-      const src = (data && data.src) || IDLE;
+      const src = data && data.src;
+      if (!src || src === MENU_SENTINEL) { showLogo(); return; }
+      hideLogo();
       // Always restart, even if it's the same source.
       vid.src = src;
       vid.currentTime = 0;
