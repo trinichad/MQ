@@ -14,8 +14,15 @@ event to all connected clients, so the UI can lock in the active spell.
 import os
 import sys
 import logging
-from flask import Flask, send_from_directory, render_template, abort
+from flask import Flask, send_from_directory, render_template, abort, jsonify
 from flask_socketio import SocketIO, emit
+
+# File extensions we consider playable video clips for preload manifests.
+VIDEO_EXTS = ('.mp4', '.webm', '.mov', '.m4v', '.ogv')
+
+# How long the browser is allowed to cache video clips. Long cache is what
+# lets the "preload everything" trick work on subsequent plays.
+CLIP_CACHE_SECONDS = 60 * 60 * 24 * 7   # one week
 
 # --- paths -----------------------------------------------------------------
 
@@ -85,7 +92,9 @@ def videos(filename):
     """Backwards-compat: /videos/Foo.mp4 -> charlock_videos/Foo.mp4 ."""
     if not os.path.isdir(VIDEOS_DIR):
         abort(404)
-    return send_from_directory(VIDEOS_DIR, filename, conditional=True)
+    resp = send_from_directory(VIDEOS_DIR, filename, conditional=True)
+    resp.headers['Cache-Control'] = 'public, max-age=%d' % CLIP_CACHE_SECONDS
+    return resp
 
 
 @app.route('/clips/<slug>/<path:filename>')
@@ -94,7 +103,44 @@ def encounter_clip(slug, filename):
     folder = ENCOUNTER_DIRS.get(slug)
     if not folder or not os.path.isdir(folder):
         abort(404)
-    return send_from_directory(folder, filename, conditional=True)
+    resp = send_from_directory(folder, filename, conditional=True)
+    resp.headers['Cache-Control'] = 'public, max-age=%d' % CLIP_CACHE_SECONDS
+    return resp
+
+
+@app.route('/manifest')
+def manifest():
+    """Return the list of every clip URL the video player might be asked to
+    play. The video page uses this to warm the browser's HTTP cache on
+    startup so subsequent ``change_video`` switches are instant.
+    """
+    clips = []
+    for slug, folder in ENCOUNTER_DIRS.items():
+        if not os.path.isdir(folder):
+            continue
+        try:
+            names = sorted(os.listdir(folder))
+        except OSError:
+            continue
+        for name in names:
+            if name.startswith('.'):
+                continue
+            if not name.lower().endswith(VIDEO_EXTS):
+                continue
+            full = os.path.join(folder, name)
+            if not os.path.isfile(full):
+                continue
+            try:
+                size = os.path.getsize(full)
+            except OSError:
+                size = 0
+            clips.append({
+                'slug':  slug,
+                'name':  name,
+                'url':   '/clips/%s/%s' % (slug, name),
+                'bytes': size,
+            })
+    return jsonify({'clips': clips, 'count': len(clips)})
 
 
 @app.route('/images/<path:filename>')

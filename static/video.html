@@ -35,6 +35,12 @@
 </head>
 <body>
   <video id="vid" autoplay muted playsinline></video>
+  <!-- Hidden pool of <video> elements, one per clip. Each is set to
+       preload="auto" so the browser fetches and decodes the file up front.
+       When the UI asks us to play a clip we copy its src into the visible
+       player, which the browser can serve straight from cache. -->
+  <div id="preload-pool" aria-hidden="true"
+       style="position:fixed; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;"></div>
   <div id="logo-screen" class="show">
     <div class="magi">MagiQuest</div>
     <div class="quest">ENCOUNTERS</div>
@@ -55,7 +61,84 @@
     const vid    = document.getElementById('vid');
     const status = document.getElementById('status');
     const logo   = document.getElementById('logo-screen');
+    const pool   = document.getElementById('preload-pool');
     const MENU_SENTINEL = '__menu__';
+
+    // ---------------- preload pool ----------------
+    //
+    // Fetch the server-side manifest of every clip and preload each one with
+    // a hidden <video preload="auto">. This warms both the HTTP cache (long
+    // Cache-Control) and the browser's media buffer, so play() on any clip
+    // starts essentially instantly.
+    //
+    // We preload with a small concurrency limit so we don't saturate the
+    // Pi's network/disk on startup.
+
+    const PRELOAD_CONCURRENCY = 3;
+    const preloaded = new Map();   // url -> <video> element
+
+    function makePreloader(url) {
+      const v = document.createElement('video');
+      v.preload     = 'auto';
+      v.muted       = true;
+      v.playsInline = true;
+      v.src         = url;
+      pool.appendChild(v);
+      preloaded.set(url, v);
+      return v;
+    }
+
+    function waitReady(v) {
+      return new Promise((resolve) => {
+        if (v.readyState >= 4) return resolve();           // HAVE_ENOUGH_DATA
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          v.removeEventListener('canplaythrough', finish);
+          v.removeEventListener('loadeddata',     finish);
+          v.removeEventListener('error',          finish);
+          resolve();
+        };
+        v.addEventListener('canplaythrough', finish);
+        v.addEventListener('loadeddata',     finish);
+        v.addEventListener('error',          finish);
+        // Hard timeout so one slow/broken file doesn't stall the queue.
+        setTimeout(finish, 30000);
+        try { v.load(); } catch(_) {}
+      });
+    }
+
+    async function preloadAll() {
+      let manifest;
+      try {
+        const r = await fetch('/manifest', { cache: 'no-store' });
+        manifest = await r.json();
+      } catch (e) {
+        console.warn('preload: manifest fetch failed', e);
+        return;
+      }
+      const clips = (manifest && manifest.clips) || [];
+      status.textContent = 'video screen — preloading 0/' + clips.length;
+
+      let done = 0;
+      const queue = clips.slice();
+      async function worker() {
+        while (queue.length) {
+          const c = queue.shift();
+          const v = makePreloader(c.url);
+          await waitReady(v);
+          done++;
+          status.textContent =
+            'video screen — preloading ' + done + '/' + clips.length;
+        }
+      }
+      const workers = [];
+      for (let i = 0; i < PRELOAD_CONCURRENCY; i++) workers.push(worker());
+      await Promise.all(workers);
+      status.textContent = 'video screen — ready (' + clips.length + ' clips)';
+      console.log('[preload] complete:', clips.length, 'clips');
+    }
 
     function showLogo() {
       logo.classList.add('show');
@@ -67,6 +150,9 @@
 
     // Start on the logo screen until UI tells us otherwise.
     showLogo();
+
+    // Kick off background preload of every clip.
+    preloadAll();
 
     const socket = io();
 
@@ -81,6 +167,13 @@
       const src = data && data.src;
       if (!src || src === MENU_SENTINEL) { showLogo(); return; }
       hideLogo();
+      // If we have a preloaded element for this src, prime its data into the
+      // visible player by reusing the same URL (browser HTTP cache will
+      // serve it instantly) and seeking to 0.
+      const pre = preloaded.get(src);
+      if (pre && pre.readyState >= 2) {
+        try { pre.pause(); pre.currentTime = 0; } catch(_) {}
+      }
       // Always restart, even if it's the same source.
       vid.src = src;
       vid.currentTime = 0;
