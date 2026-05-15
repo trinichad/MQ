@@ -123,9 +123,10 @@
 
     function showLogo() {
       logo.classList.add('show');
+      // Pause but keep the current frame and src so the player doesn't
+      // tear down its presentation surface (which causes a white flash
+      // on the Pi). The logo overlay sits above the video at z-index 10.
       try { vid.pause(); } catch(_) {}
-      vid.removeAttribute('src');
-      vid.load();
     }
     function hideLogo() { logo.classList.remove('show'); }
 

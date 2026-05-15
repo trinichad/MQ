@@ -63,7 +63,18 @@ COMMON_FLAGS=(
     --check-for-update-interval=31536000
 )
 
-"$CHROMIUM" "${COMMON_FLAGS[@]}" \
+# Flags applied only to the /video kiosk window. Disabling the hardware
+# video overlay plane forces Chromium to composite video through the
+# normal page layer, which eliminates the brief white flash that
+# otherwise appears when <video src> is swapped (the overlay plane is
+# torn down and recreated). On a Pi 4/5 with short clips the CPU cost
+# is negligible.
+VIDEO_FLAGS=(
+    --disable-features=UseChromeOSDirectVideoDecoder,AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL
+    --disable-accelerated-video-decode
+)
+
+"$CHROMIUM" "${COMMON_FLAGS[@]}" "${VIDEO_FLAGS[@]}" \
     --user-data-dir=/tmp/charlock-video \
     --window-position="$DISPLAY_VIDEO_POS" \
     --window-size="$WIN_W,$WIN_H" \
