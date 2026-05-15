@@ -33,7 +33,16 @@ PORT="${CHARLOCK_PORT:-5000}"
 
 echo "------ launch_game.sh $(date) ------" >> "$LOG_FILE"
 
-python3 server.py >> "$LOG_FILE" 2>&1 &
+# Prefer the project's virtualenv (flask_socketio etc. are installed there
+# by install_pi.sh). Fall back to system python3 only if no venv exists.
+if [ -x "$GAME_DIR/.venv/bin/python" ]; then
+    PYTHON="$GAME_DIR/.venv/bin/python"
+else
+    PYTHON="$(command -v python3)"
+fi
+echo "using python: $PYTHON" >> "$LOG_FILE"
+
+"$PYTHON" server.py >> "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 echo "server pid=$SERVER_PID" >> "$LOG_FILE"
 
