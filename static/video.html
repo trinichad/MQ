@@ -7,6 +7,12 @@
 <style>
   html, body { background:#000; margin:0; padding:0; height:100%; overflow:hidden; cursor:none; }
   #vid { width:100vw; height:100vh; object-fit:contain; background:#000; }
+  #curtain {
+    position:fixed; inset:0; background:#000;
+    z-index: 5; pointer-events:none;
+    opacity: 1;
+  }
+  #curtain.hidden { opacity: 0; }
   #status { position:fixed; bottom:6px; right:10px; color:#333; font:11px monospace; }
   #logo-screen {
     position:fixed; inset:0; display:none;
@@ -36,6 +42,10 @@
 </head>
 <body>
   <video id="vid" autoplay muted playsinline></video>
+  <!-- Solid black curtain that we raise above the <video> whenever we are
+       swapping its src. Hides any framebuffer / decoder teardown that
+       would otherwise flash white between clips. -->
+  <div id="curtain"></div>
   <div id="logo-screen" class="show">
     <div class="magi">MagiQuest</div>
     <div class="quest">ENCOUNTERS</div>
@@ -53,10 +63,14 @@
     // browsers require the page itself to load with `muted` attribute first
     // and then we unmute on first interaction or after socket connect.
 
-    const vid    = document.getElementById('vid');
-    const status = document.getElementById('status');
-    const logo   = document.getElementById('logo-screen');
+    const vid     = document.getElementById('vid');
+    const status  = document.getElementById('status');
+    const logo    = document.getElementById('logo-screen');
+    const curtain = document.getElementById('curtain');
     const MENU_SENTINEL = '__menu__';
+
+    function raiseCurtain() { curtain.classList.remove('hidden'); }
+    function dropCurtain()  { curtain.classList.add('hidden'); }
 
     // ---------------- preload ----------------
     //
@@ -149,6 +163,9 @@
       const src = data && data.src;
       if (!src || src === MENU_SENTINEL) { showLogo(); return; }
       hideLogo();
+      // Raise the curtain BEFORE touching vid.src — any decoder teardown
+      // / framebuffer flash now happens behind a solid black div.
+      raiseCurtain();
       // Bytes come from the HTTP cache that preloadAll() warmed up, so
       // setting src is effectively instant after preload completes.
       vid.src = src;
@@ -161,6 +178,15 @@
           vid.play().catch(()=>{});
         });
       }
+    });
+
+    // Drop the curtain only once the new clip is actually rendering frames.
+    // `playing` fires after the first frame has been presented, which is
+    // exactly the moment it's safe to reveal the <video> again.
+    vid.addEventListener('playing', () => {
+      // One extra frame of safety so the compositor definitely has the
+      // first video frame on screen before the black curtain disappears.
+      requestAnimationFrame(() => requestAnimationFrame(dropCurtain));
     });
 
     vid.addEventListener('ended', () => {
