@@ -6,15 +6,7 @@
 <link rel="stylesheet" href="/static/css/style.css">
 <style>
   html, body { background:#000; margin:0; padding:0; height:100%; overflow:hidden; cursor:none; }
-  .vid {
-    position:fixed; inset:0;
-    width:100vw; height:100vh;
-    object-fit:contain; background:#000;
-    opacity:0;
-    transition: opacity 120ms linear;
-  }
-  .vid.active { opacity:1; z-index:1; }
-  .vid.idle   { opacity:0; z-index:0; }
+  #vid { width:100vw; height:100vh; object-fit:contain; background:#000; }
   #status { position:fixed; bottom:6px; right:10px; color:#333; font:11px monospace; }
   #logo-screen {
     position:fixed; inset:0; display:none;
@@ -43,13 +35,7 @@
 </style>
 </head>
 <body>
-  <!-- Double-buffered players. We always keep the previously-shown clip
-       on screen (frozen on its last frame) while the next clip loads into
-       the hidden buffer. Once the incoming buffer fires `playing` we swap
-       which one is active. This hides the brief tear-down of the Pi's
-       hardware video overlay plane that would otherwise flash white. -->
-  <video id="vidA" class="vid active" autoplay muted playsinline></video>
-  <video id="vidB" class="vid idle"           muted playsinline></video>
+  <video id="vid" autoplay muted playsinline></video>
   <div id="logo-screen" class="show">
     <div class="magi">MagiQuest</div>
     <div class="quest">ENCOUNTERS</div>
@@ -67,27 +53,10 @@
     // browsers require the page itself to load with `muted` attribute first
     // and then we unmute on first interaction or after socket connect.
 
-    const vidA   = document.getElementById('vidA');
-    const vidB   = document.getElementById('vidB');
+    const vid    = document.getElementById('vid');
     const status = document.getElementById('status');
     const logo   = document.getElementById('logo-screen');
     const MENU_SENTINEL = '__menu__';
-
-    // Currently-visible buffer. The other one is used to preload + warm up
-    // the next clip before we swap which is on top.
-    let active = vidA;
-    let idleBuf = vidB;
-
-    // Wire `ended` once on each buffer; only the active one's `ended` should
-    // notify the UI (the idle one might fire ended while seeking/loading).
-    function onEnded(buf) {
-      return () => {
-        if (buf !== active) return;
-        socket.emit('video_ended', { src: buf.src });
-      };
-    }
-    vidA.addEventListener('ended', onEnded(vidA));
-    vidB.addEventListener('ended', onEnded(vidB));
 
     // ---------------- preload ----------------
     //
@@ -154,10 +123,9 @@
 
     function showLogo() {
       logo.classList.add('show');
-      // Pause both buffers but keep their last frames around; the logo
-      // overlay sits above them, so any residual content is hidden anyway.
-      try { vidA.pause(); } catch(_) {}
-      try { vidB.pause(); } catch(_) {}
+      try { vid.pause(); } catch(_) {}
+      vid.removeAttribute('src');
+      vid.load();
     }
     function hideLogo() { logo.classList.remove('show'); }
 
@@ -180,72 +148,34 @@
       const src = data && data.src;
       if (!src || src === MENU_SENTINEL) { showLogo(); return; }
       hideLogo();
-      playOnIdleBuffer(src);
+      // Bytes come from the HTTP cache that preloadAll() warmed up, so
+      // setting src is effectively instant after preload completes.
+      vid.src = src;
+      vid.currentTime = 0;
+      vid.muted = false;
+      const p = vid.play();
+      if (p && p.catch) {
+        p.catch(() => {
+          vid.muted = true;
+          vid.play().catch(()=>{});
+        });
+      }
     });
 
-    // Load `src` into the hidden buffer, wait for it to actually start
-    // painting, then swap which buffer is on top. The previously-active
-    // buffer stays frozen on its last frame during the swap, so the
-    // hardware-overlay tear-down never shows through.
-    function playOnIdleBuffer(src) {
-      const next = idleBuf;
-      const prev = active;
-
-      next.src = src;
-      next.currentTime = 0;
-      next.muted = false;
-
-      const promote = () => {
-        next.classList.remove('idle');
-        next.classList.add('active');
-        prev.classList.remove('active');
-        prev.classList.add('idle');
-        active = next;
-        idleBuf = prev;
-        // Stop the old one a beat later so its last frame is still on
-        // screen until the new one is fully composited.
-        setTimeout(() => { try { prev.pause(); } catch(_) {} }, 150);
-      };
-
-      const startPlayback = () => {
-        const p = next.play();
-        if (p && p.then) {
-          p.then(promote).catch(() => {
-            // Autoplay rejected — fall back to muted and try again.
-            next.muted = true;
-            next.play().then(promote).catch(() => promote());
-          });
-        } else {
-          promote();
-        }
-      };
-
-      // Wait until the next buffer has enough data to render its first
-      // frame; otherwise promoting it would itself show a blank frame.
-      if (next.readyState >= 2) {       // HAVE_CURRENT_DATA
-        startPlayback();
-      } else {
-        const onReady = () => {
-          next.removeEventListener('loadeddata', onReady);
-          next.removeEventListener('canplay',    onReady);
-          startPlayback();
-        };
-        next.addEventListener('loadeddata', onReady);
-        next.addEventListener('canplay',    onReady);
-        try { next.load(); } catch(_) {}
-      }
-    }
+    vid.addEventListener('ended', () => {
+      socket.emit('video_ended', { src: vid.src });
+    });
 
     // Allow operator to unmute / fullscreen with a click or key.
     document.addEventListener('click', () => {
-      active.muted = false;
+      vid.muted = false;
       if (document.fullscreenElement == null && document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(()=>{});
       }
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'f') document.documentElement.requestFullscreen().catch(()=>{});
-      if (e.key === 'm') active.muted = !active.muted;
+      if (e.key === 'm') vid.muted = !vid.muted;
     });
   </script>
 </body>
